@@ -2,6 +2,7 @@
 .global load 
 .type load, @function
 
+
 load: 
 add  a4, a0, zero//a4=0
 add  a2, a0, a1//a2=10

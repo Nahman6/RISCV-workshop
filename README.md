@@ -818,4 +818,7 @@ https://github.com/user-attachments/assets/155cad09-95b4-4b8e-a9f9-baafab323529
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
 
 ## Acknowledgements
-I would thank to [Kunal Ghosh](https://www.linkedin.com/in/kunal-ghosh-vlsisystemdesign-com-28084836/?miniProfileUrn=urn%3Ali%3Afs_miniProfile%3AACoAAAeZe4ABRnXXgcvVesykjXO-9WZxOuR05PE) sir who guided us over this workshop and also taught us the first two days of this workshop. I will also express my gratitude to [Steve Hoover](https://www.linkedin.com/in/steve-hoover-a44b607/) sir who taught us in the last 3 days. And also thank to VSD and Redwood EDA for organizing this workshop.  
+I sincerely thank [Kunal Ghosh](https://www.linkedin.com/in/kunal-ghosh-vlsisystemdesign-com-28084836/?miniProfileUrn=urn%3Ali%3Afs_miniProfile%3AACoAAAeZe4ABRnXXgcvVesykjXO-9WZxOuR05PE) sir and [Steve Hoover](https://www.linkedin.com/in/steve-hoover-a44b607/) sir who taught us over the course of this 10 day workshop.
+I learnt a lot under their guidance in such a short span of time. Their constant motivation to make us write our own codes and simulate them instilled a lot of confidence. 
+
+Thanks to VSD and Redwood EDA for organizing this workshop and making it so helpful for us. 

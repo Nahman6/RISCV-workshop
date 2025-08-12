@@ -356,9 +356,9 @@ ALU stands for Arithmetic Logic Unit, a fundamental component of a computer's ce
 1. Go to [Makerchip](makerchip.com) and click on launch makerchip IDE.
 2. Go to editor and place the below TL-Verilog in place of //...
 
- 		 |cpu
-        
-      @0
+|cpu
+ 
+     @0
          $reset = *reset;
          $pc[31:0] = >>1$reset ? 32'b0 : >>1$pc + 32'd4;
          $pc[31:0] = $pc + $reset;
@@ -414,21 +414,18 @@ ALU stands for Arithmetic Logic Unit, a fundamental component of a computer's ce
          $is_add = $dec_bits ==? 11'bx_000_0010011;
          
          `BOGUS_USE($is_beq $is_bne $is_blt $is_bge $is_bltu $is_bgeu $is_addi $is_add)
-         
-   
-   // Assert these to end simulation (before Makerchip cycle limit).
-   *passed = *cyc_cnt > 40;
-   *failed = 1'b0;
-         
-       
-           
-   // Assert these to end simulation (before Makerchip cycle limit).
-   // Release reset after 5 cycles
-   
-
-   // Simple simulation pass condition
-   *passed = *cyc_cnt > 40;
-   *failed = 1'b0;
+	   // Assert these to end simulation (before Makerchip cycle limit).
+	   *passed = *cyc_cnt > 40;
+	   *failed = 1'b0;
+	         
+	       
+	 // Assert these to end simulation (before Makerchip cycle limit).
+	   // Release reset after 5 cycles
+	   
+	
+	   // Simple simulation pass condition
+	   *passed = *cyc_cnt > 40;
+	   *failed = 1'b0;
 
 
 	    
@@ -448,16 +445,16 @@ ALU stands for Arithmetic Logic Unit, a fundamental component of a computer's ce
 
 		 |cpu
        
-     @0
-         $reset = *reset;
+	     @0
+	         $reset = *reset;
          
          $pc[31:0] = (>>1$reset) ? 32'd0 : (>>1$pc + 32'd4);
          $imem_rd_addr[M4_IMEM_INDEX_CNT - 1:0] = $pc[M4_IMEM_INDEX_CNT + 1:2];
          
          $imem_rd_en = !$reset;
        
-      @1
-         
+	      @1
+	         
        
          
          $instr[31:0] = $imem_rd_data[31:0];
@@ -590,8 +587,8 @@ This is the link to my work [CPU](https://myth.makerchip.com/sandbox/02kfkhXA6/0
 
    		|cpu
        
-     @0
-         $reset = *reset;
+	     @0
+	         $reset = *reset;
          
          $pc[31:0] = >>1$reset ? '0:
                      >>3$valid_taken_br || >>3$is_jal && >>3$valid_jump ? >>3$br_tgt_pc :
@@ -604,7 +601,7 @@ This is the link to my work [CPU](https://myth.makerchip.com/sandbox/02kfkhXA6/0
          
        
        //instruction type decode
-      @1
+	      @1
          
          *passed = |cpu/xreg[15]>>5$value == (1+2+3+4+5+6+7+8+9);
          $inc_pc[31:0] = $pc + 32'd4;
@@ -699,7 +696,7 @@ This is the link to my work [CPU](https://myth.makerchip.com/sandbox/02kfkhXA6/0
          
          
          //read register file and branch
-      @2  
+	      @2  
          
          $src1_value[31:0] = (>>1$rf_wr_index == $rf_rd_index1) && >>1$rf_wr_en ? >>1$rf_wr_data :
                               $rf_rd_data1;
@@ -715,33 +712,33 @@ This is the link to my work [CPU](https://myth.makerchip.com/sandbox/02kfkhXA6/0
          
          
          //ALU
-      @3                  
-         $result[31:0] = $is_addi || $is_load || $is_s_instr? $src1_value + $imm :
-                         $is_add ? $src1_value + $src2_value:
-                         $is_andi ? $src1_value & $imm:
-                         $is_ori ? $src1_value | $imm:
-                         $is_xori ? $src1_value ^ $imm:
-                         $is_slli ? $src1_value << $imm[5:0]:
-                         $is_srli ? $src1_value >> $imm[5:0]:
-                         $is_and ? $src1_value & $src2_value:
-                         $is_or ? $src1_value | $src2_value:
-                         $is_xor ? $src1_value ^ $src2_value:
-                         $is_sub ? $src1_value - $src2_value:
-                         $is_sll ? $src1_value << $src2_value[4:0]:
-                         $is_srl ? $src1_value >> $src2_value[4:0]:
-                         $is_sltu ? $src1_value < $src2_value:
-                         $is_sltiu ? $src1_value < $imm:
-                         $is_lui ? {$imm[31:12],'0}:
-                         $is_auipc ? $pc + $imm :
-                         $is_jal ? $pc + 4 :
-                         $is_jalr ? $pc + 4 :
-                         $is_srai ? { {32{$src1_value[31]}}, $src1_value} >> $imm[4:0]:
-                         $is_slt ? ($src1_value[31] == $src2_value[31]) ? $sltu_rslt : {31'b0, $src1_value[31]}:
-                         $is_slti ? ($src1_value[31] == $imm[31]) ? $sltiu_rslt : {31'b0, $src1_value[31]}:
-                         $is_sra ? { {32{$src1_value[31]}}, $src1_value} >> $src2_value[4:0]:
-                         'x;
-         
-         
+	      @3                  
+	         $result[31:0] = $is_addi || $is_load || $is_s_instr? $src1_value + $imm :
+	                         $is_add ? $src1_value + $src2_value:
+	                         $is_andi ? $src1_value & $imm:
+	                         $is_ori ? $src1_value | $imm:
+	                         $is_xori ? $src1_value ^ $imm:
+	                         $is_slli ? $src1_value << $imm[5:0]:
+	                         $is_srli ? $src1_value >> $imm[5:0]:
+	                         $is_and ? $src1_value & $src2_value:
+	                         $is_or ? $src1_value | $src2_value:
+	                         $is_xor ? $src1_value ^ $src2_value:
+	                         $is_sub ? $src1_value - $src2_value:
+	                         $is_sll ? $src1_value << $src2_value[4:0]:
+	                         $is_srl ? $src1_value >> $src2_value[4:0]:
+	                         $is_sltu ? $src1_value < $src2_value:
+	                         $is_sltiu ? $src1_value < $imm:
+	                         $is_lui ? {$imm[31:12],'0}:
+	                         $is_auipc ? $pc + $imm :
+	                         $is_jal ? $pc + 4 :
+	                         $is_jalr ? $pc + 4 :
+	                         $is_srai ? { {32{$src1_value[31]}}, $src1_value} >> $imm[4:0]:
+	                         $is_slt ? ($src1_value[31] == $src2_value[31]) ? $sltu_rslt : {31'b0, $src1_value[31]}:
+	                         $is_slti ? ($src1_value[31] == $imm[31]) ? $sltiu_rslt : {31'b0, $src1_value[31]}:
+	                         $is_sra ? { {32{$src1_value[31]}}, $src1_value} >> $src2_value[4:0]:
+	                         'x;
+	         
+	         
          
          $taken_br =  $is_beq ? ($src1_value == $src2_value) :
                       $is_bne ? ($src1_value != $src2_value) :
@@ -777,8 +774,8 @@ This is the link to my work [CPU](https://myth.makerchip.com/sandbox/02kfkhXA6/0
          
          
          //SRAM memory -store
-      @4
-         $dmem_wr_en = $is_s_instr && $valid;
+	      @4
+	         $dmem_wr_en = $is_s_instr && $valid;
          
          $dmem_addr[3:0] = $result[5:2];
          
@@ -788,8 +785,8 @@ This is the link to my work [CPU](https://myth.makerchip.com/sandbox/02kfkhXA6/0
          
          
          //load data
-      @5
-         $ld_data[31:0] = $dmem_rd_data;      
+	      @5
+	         $ld_data[31:0] = $dmem_rd_data;      
                            
 	    
 3. Then click on 'compile'.

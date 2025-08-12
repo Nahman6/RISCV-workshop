@@ -356,90 +356,79 @@ ALU stands for Arithmetic Logic Unit, a fundamental component of a computer's ce
 1. Go to [Makerchip](makerchip.com) and click on launch makerchip IDE.
 2. Go to editor and place the below TL-Verilog in place of //...
 
- 		  |cpu
-     		 @0
-       		  $reset = *reset;
-       		  $pc[31:0] = >>1$reset ? '0 :  (>>1$pc + 32'd4);
-         
-     		 @1
-     		    $imem_rd_en = ! $reset;
-    		     $imem_rd_addr[M4_IMEM_INDEX_CNT - 1:0] = $pc[M4_IMEM_INDEX_CNT + 1:2];
-         
-         
+ 		 |cpu
+        
+      @0
+         $reset = *reset;
+         $pc[31:0] = >>1$reset ? 32'b0 : >>1$pc + 32'd4;
+         $pc[31:0] = $pc + $reset;
+         $imem_rd_addr[3-1:0] = $pc[3+1:2];
+         $imem_rd_en = ?$reset;
+      @1
          $instr[31:0] = $imem_rd_data[31:0];
+         $is_i_instr = $instr[6:2] ==? 5b'00000 ||
+                       $instr[6:2] ==? 5b'00001 ||
+                       $instr[6:2] ==? 5b'11001 ||
+                       $instr[6:2] ==? 5b'001x0; 
+         $is_r_instr = $instr[6:2] ==? 5b'01011 ||
+                       $instr[6:2] ==? 5b'01100 || 
+                       $instr[6:2] ==? 5b'01110 ||
+                       $instr[6:2] ==? 5b'10100;
+         $is_s_instr = $instr[6:2] ==? 5b'0100x;
+         $is_b_instr = $instr[6:2] ==? 5b'11000;
+         $is_j_instr = $instr[6:2] ==? 5b'11011;
+         $is_u_instr = $instr[6:2] ==? 5b'0x101;
+         $imm[31:0] = $is_i_instr?{{21{$instr[31]}},$instr[30:20]}:
+                      $is_s_instr?{{21{$instr[31]}}, $instr[30:25], $instr[11:7]}:
+                      $is_b_instr?{{20{$instr[31]}}, $instr[7], $instr[30:25], $instr[11:8], 1'b0}:
+                      $is_u_instr?{$instr[31:12], 12'b0} :
+                      $is_j_instr?{{12{$instr[31]}}, $instr[19:12], $instr[20], $instr[30:21],1'b0}: 
+                      32'b0;
          
-         $is_i_instr = $instr[6:2] ==? 5'b0000x ||
-                       $instr[6:2] ==? 5'b001x0 ||
-                       $instr[6:2] ==? 5'b11001 ||
-                       $instr[6:2] ==? 5'b00100;
-         
-         $is_r_instr = $instr[6:2] ==? 5'b01011 ||
-                       $instr[6:2] ==? 5'b011x0 ||
-                       $instr[6:2] ==? 5'b10100;
-         
-         $is_s_instr = $instr[6:2] ==? 5'b0100x;
-         
-         $is_b_instr = $instr[6:2] ==? 5'b11000;
-         
-         $is_j_instr = $instr[6:2] ==? 5'b11011;
-         
-         $is_u_instr = $instr[6:2] ==? 5'b0x101;
-         
-         $imm[31:0] = $is_i_instr ? { {21{$instr[31]}}, $instr[30:20] } :
-                      $is_s_instr ? { {21{$instr[31]}}, $instr[30:25], $instr[11:7] } :
-                      $is_b_instr ? { {20{$instr[31]}}, $instr[7], $instr[31:25], $instr[11:8], 1'b0 } :
-                      $is_u_instr ? { $instr[31:12] , 12'b0 } : 
-                      $is_j_instr ? { {12{$instr[31]}}, $instr[19:12], $instr[20], $instr[30:21], 1'b0 } :
-                      32'b0 ;
-         
-         
-         $rs1[4:0] = $instr[19:15];
-         $rs2[4:0] = $instr[24:20];
-         $rd[4:0] = $instr[11:7];
-         $funct7[6:0] = $instr[31:25];
-         $funct3[2:0] = $instr[14:12];
          $opcode[6:0] = $instr[6:0];
-         
-         
-         
-         $rs1_valid = $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr  ;
-         ?$rs1_valid
-            $rs1[4:0] = $instr[19:15];
-         
-         
-         $rs2_valid = $is_r_instr || $is_s_instr || $is_b_instr ;
-         ?$rs2_valid
-            $rs2[4:0] = $instr[24:20];
-         
-         
-         $rd_valid = $is_r_instr || $is_i_instr || $is_u_instr || $is_j_instr;
-         ?$rd_valid
-            $rd[4:0] = $instr[11:7];
-         
-         $funct7_valid = $is_r_instr ;
-         ?$funct7_valid
-            $funct7[6:0] = $instr[31:25];
-         
-         $funct3_valid = $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr;
+         $funct3_valid = $is_b_instr || $is_s_instr || $is_i_instr || $is_r_instr;
          ?$funct3_valid
             $funct3[2:0] = $instr[14:12];
-         
-         $opcode_valid = $is_i_instr ||  $is_r_instr || $is_s_instr || $is_b_instr || $is_j_instr || $is_u_instr;
-         ?$opcode_valid
-            $opcode[6:0] = $instr[6:0];
-         
-         
-         $dec_bits[10:0] = { $funct7[5], $funct3, $opcode };
-         
-         
-         $is_add = $dec_bits ==? 11'b0_000_0110011;
-         $is_addi = $dec_bits ==? 11'bx_000_0010011;
+         $funct7_valid = $is_r_instr;
+         ?$funct7_valid
+            $funct7[6:0] = $instr[31:25];
+         $rs1_valid = $is_b_instr || $is_s_instr || $is_i_instr || $is_r_instr;
+         ?$rs1_valid
+            $rs1[4:0] = $instr[19:15];
+         $rs2_valid = $is_b_instr || $is_s_instr || $is_r_instr;
+         ?$rs2_valid
+            $rs2[4:0] = $instr[24:20];
+         $rd_valid =  $is_u_instr || $is_j_instr || $is_i_instr || $is_r_instr;
+         ?$rd_valid
+            $rd[4:0] = $instr[11:7];
+            
+                
+         $dec_bits[10:0] = {$funct7[5],$funct3,$opcode};
          $is_beq = $dec_bits ==? 11'bx_000_1100011;
          $is_bne = $dec_bits ==? 11'bx_001_1100011;
          $is_blt = $dec_bits ==? 11'bx_100_1100011;
          $is_bge = $dec_bits ==? 11'bx_101_1100011;
          $is_bltu = $dec_bits ==? 11'bx_110_1100011;
-         $is_bgeu = $dec_bits ==? 11'bx_111_1100011;
+         $is_bgeu = $dec_bits ==? 11'bx_000_1100011;
+         $is_addi = $dec_bits ==? 11'bx_000_0010011;
+         $is_add = $dec_bits ==? 11'bx_000_0010011;
+         
+         `BOGUS_USE($is_beq $is_bne $is_blt $is_bge $is_bltu $is_bgeu $is_addi $is_add)
+         
+   
+   // Assert these to end simulation (before Makerchip cycle limit).
+   *passed = *cyc_cnt > 40;
+   *failed = 1'b0;
+         
+       
+           
+   // Assert these to end simulation (before Makerchip cycle limit).
+   // Release reset after 5 cycles
+   
+
+   // Simple simulation pass condition
+   *passed = *cyc_cnt > 40;
+   *failed = 1'b0;
 
 
 	    
@@ -457,81 +446,66 @@ ALU stands for Arithmetic Logic Unit, a fundamental component of a computer's ce
 			
 
 
-		|cpu
-     		 @0
-        		 $reset = *reset;
+		 |cpu
+       
+     @0
+         $reset = *reset;
          
-        		 $pc[31:0] = (>>1$reset) ? 32'd0 : (>>1$pc + 32'd4);
+         $pc[31:0] = (>>1$reset) ? 32'd0 : (>>1$pc + 32'd4);
+         $imem_rd_addr[M4_IMEM_INDEX_CNT - 1:0] = $pc[M4_IMEM_INDEX_CNT + 1:2];
          
-        
-     			 @1
-   		
-         		$imem_rd_addr[M4_IMEM_INDEX_CNT - 1:0] = $pc[M4_IMEM_INDEX_CNT + 1:2];
+         $imem_rd_en = !$reset;
+       
+      @1
          
-         		$imem_rd_en = !$reset;
+       
          
-        		 $instr[31:0] = $imem_rd_data[31:0];
-         
-         
-         
-         		$is_i_instr = $instr[6:2] ==? 5'b0000x ||
-                       $instr[6:2] ==? 5'b001x0 ||
+         $instr[31:0] = $imem_rd_data[31:0];
+         $is_i_instr = $instr[6:2] ==? 5'b00000 ||
+                       $instr[6:2] ==? 5'b00001 ||
                        $instr[6:2] ==? 5'b11001 ||
-                       $instr[6:2] ==? 5'b00100;
-         
-   		  $is_r_instr = $instr[6:2] ==? 5'b01011 ||
+                       $instr[6:2] ==? 5'b001x0;
+         $is_r_instr = $instr[6:2] ==? 5'b01011 ||
                        $instr[6:2] ==? 5'b011x0 ||
                        $instr[6:2] ==? 5'b10100;
+         $is_s_instr = $instr[6:2] ==? 5'b0100x;
+         $is_b_instr = $instr[6:2] ==? 5'b11000;
+         $is_j_instr = $instr[6:2] ==? 5'b11011;
+         $is_u_instr = $instr[6:2] ==? 5'b0x101;
+         $imm[31:0] = $is_i_instr?{{21{$instr[31]}},$instr[30:20]}:
+                      $is_s_instr?{{21{$instr[31]}}, $instr[30:25], $instr[11:7]}:
+                      $is_b_instr?{{20{$instr[31]}}, $instr[7], $instr[30:25], $instr[11:8], 1'b0}:
+                      $is_u_instr?{$instr[31:12], 12'b0} :
+                      $is_j_instr?{{12{$instr[31]}}, $instr[19:12], $instr[20], $instr[30:21],1'b0}:
+                      32'b0;
          
-        		 $is_s_instr = $instr[6:2] ==? 5'b0100x;
+       
          
-        		 $is_b_instr = $instr[6:2] ==? 5'b11000;
+         $opcode[6:0] = $instr[6:0];
          
-        		 $is_j_instr = $instr[6:2] ==? 5'b11011;
-         
-      		   $is_u_instr = $instr[6:2] ==? 5'b0x101;
-         
-         
-         		$imm[31:0] = $is_i_instr ? { {21{$instr[31]}}, $instr[30:20] } :
-                      $is_s_instr ? { {21{$instr[31]}}, $instr[30:25], $instr[11:7] } :
-                      $is_b_instr ? { {20{$instr[31]}}, $instr[7], $instr[31:25], $instr[11:8], 1'b0 } :
-                      $is_u_instr ? { $instr[31:12] , 12'b0 } : 
-                      $is_j_instr ? { {12{$instr[31]}}, $instr[19:12], $instr[20], $instr[30:21], 1'b0 } :
-                      32'b0 ;
-         
-         
-   
-        $rs1_valid = $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr  ;
-         ?$rs1_valid
-            $rs1[4:0] = $instr[19:15];
-         
-         
-         $rs2_valid = $is_r_instr || $is_s_instr || $is_b_instr ;
+         $rs2_valid = $is_r_instr || $is_s_instr || $is_b_instr;
          ?$rs2_valid
             $rs2[4:0] = $instr[24:20];
-         
-         
-         $rd_valid = $is_r_instr || $is_i_instr || $is_u_instr || $is_j_instr;
-         ?$rd_valid
-            $rd[4:0] = $instr[11:7];
-         
-         $funct7_valid = $is_r_instr ;
-         ?$funct7_valid
-            $funct7[6:0] = $instr[31:25];
+            
+         $rs1_valid = $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr;
+         ?$rs1_valid
+            $rs1[4:0] = $instr[19:15];
          
          $funct3_valid = $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr;
          ?$funct3_valid
             $funct3[2:0] = $instr[14:12];
-         
-         $opcode_valid = $is_i_instr ||  $is_r_instr || $is_s_instr || $is_b_instr || $is_j_instr || $is_u_instr;
-         ?$opcode_valid
-            $opcode[6:0] = $instr[6:0];
-
-         
-        
-         
-         
-         
+            
+         $funct7_valid = $is_r_instr ;
+         ?$funct7_valid
+            $funct7[6:0] = $instr[31:25];
+            
+         $rd_valid = $is_r_instr || $is_i_instr || $is_u_instr || $is_j_instr;
+         ?$rd_valid
+            $rd[4:0] = $instr[11:7];
+            
+         `BOGUS_USE($rd)
+           
+         //decode
          $dec_bits[10:0] = { $funct7[5], $funct3, $opcode };
          
          
@@ -546,10 +520,11 @@ ALU stands for Arithmetic Logic Unit, a fundamental component of a computer's ce
          $is_bltu = $dec_bits ==? 11'bx_110_1100011;
          $is_bgeu = $dec_bits ==? 11'bx_111_1100011;
          
-         //read register file 
          
          
-         
+       
+         //read register file
+               
          $rf_wr_en = $rd_valid;
          $rf_wr_index[4:0] = $rd;
          
@@ -563,7 +538,7 @@ ALU stands for Arithmetic Logic Unit, a fundamental component of a computer's ce
          $src1_value[31:0] = $rf_rd_data1;
          $src2_value[31:0] = $rf_rd_data2;
          
-         //ALU 
+         //ALU
          
          $result[31:0] = $is_addi ? ($src1_value + $imm) :
                          $is_add ? ($src1_value + $src2_value) :
@@ -582,6 +557,8 @@ ALU stands for Arithmetic Logic Unit, a fundamental component of a computer's ce
          
          
          $br_tgt_pc[31:0] = $pc + $imm;
+         *passed = |cpu/xreg[10]>>1$value == (1+2+3+4+5+6+7+8+9);
+                           
 
 3. Then click on 'compile'
 
@@ -612,74 +589,77 @@ This is the link to my work [CPU](https://myth.makerchip.com/sandbox/02kfkhXA6/0
 2. Go to editor and place the below TL-Verilog in place of //...
 
    		|cpu
-     		 @0
+       
+     @0
          $reset = *reset;
+         
          $pc[31:0] = >>1$reset ? '0:
                      >>3$valid_taken_br || >>3$is_jal && >>3$valid_jump ? >>3$br_tgt_pc :
                      >>3$is_jalr && >>3$valid_jump ? >>3$jalr_tgt_pc :
                      >>3$valid_load?  >>3$inc_pc:
                      >>1$inc_pc;
-                     
+
          $imem_rd_addr[M4_IMEM_INDEX_CNT - 1:0] = $pc[M4_IMEM_INDEX_CNT + 1:2];
          $imem_rd_en = !$reset;
-      		@1
-         		*passed = |cpu/xreg[10]>>5$value == (1+2+3+4+5+6+7+8+9);
-         		$instr[31:0] = $imem_rd_data;
-        		 $inc_pc[31:0] = $pc + 4;
          
-       		  $is_i_instr = $instr[6:2] ==? 5'b0000x ||
-                       $instr[6:2] ==? 5'b001x0 ||
+       
+       //instruction type decode
+      @1
+         
+         *passed = |cpu/xreg[15]>>5$value == (1+2+3+4+5+6+7+8+9);
+         $inc_pc[31:0] = $pc + 32'd4;
+         $instr[31:0] = $imem_rd_data[31:0];
+         $is_i_instr = $instr[6:2] ==? 5'b00000 ||
+                       $instr[6:2] ==? 5'b00001 ||
                        $instr[6:2] ==? 5'b11001 ||
-                       $instr[6:2] ==? 5'b00100;
-         
+                       $instr[6:2] ==? 5'b001x0;
          $is_r_instr = $instr[6:2] ==? 5'b01011 ||
                        $instr[6:2] ==? 5'b011x0 ||
                        $instr[6:2] ==? 5'b10100;
-         
          $is_s_instr = $instr[6:2] ==? 5'b0100x;
-         
          $is_b_instr = $instr[6:2] ==? 5'b11000;
-         
          $is_j_instr = $instr[6:2] ==? 5'b11011;
-         
          $is_u_instr = $instr[6:2] ==? 5'b0x101;
          
-         $imm[31:0] = $is_i_instr ? { {21{$instr[31]}}, $instr[30:20] } :
-                      $is_s_instr ? { {21{$instr[31]}}, $instr[30:25], $instr[11:7] } :
-                      $is_b_instr ? { {20{$instr[31]}}, $instr[7], $instr[30:25], $instr[11:8], 1'b0 } :
-                      $is_u_instr ? { $instr[31:12] , 12'b0 } : 
-                      $is_j_instr ? { {12{$instr[31]}}, $instr[19:12], $instr[20], $instr[30:21], 1'b0 } :
-                      32'b0 ;
-
+         
+         // immediate decode
+         $imm[31:0] = $is_i_instr?{{21{$instr[31]}},$instr[30:20]}:
+                      $is_s_instr?{{21{$instr[31]}}, $instr[30:25], $instr[11:7]}:
+                      $is_b_instr?{{20{$instr[31]}}, $instr[7], $instr[30:25], $instr[11:8], 1'b0}:
+                      $is_u_instr?{$instr[31:12], 12'b0} :
+                      $is_j_instr?{{12{$instr[31]}}, $instr[19:12], $instr[20], $instr[30:21],1'b0}:
+                      32'b0;
          
          $opcode_valid = $is_i_instr ||  $is_r_instr || $is_s_instr || $is_b_instr || $is_j_instr || $is_u_instr;
          ?$opcode_valid
             $opcode[6:0] = $instr[6:0];
-
+         $is_load = $opcode == 7'b0000011;
          
          
-         
-         
-         $rs1_valid = $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr; 
-         ?$rs1_valid
-            $rs1[4:0] = $instr[19:15];
-            
-         $rs2_valid = $is_r_instr || $is_s_instr || $is_b_instr; 
+         // instruction fields
+         $rs2_valid = $is_r_instr || $is_s_instr || $is_b_instr;
          ?$rs2_valid
             $rs2[4:0] = $instr[24:20];
+           
+         $rs1_valid = $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr;
+         ?$rs1_valid
+            $rs1[4:0] = $instr[19:15];
          
-         $funct7_valid = $is_r_instr; 
-         ?$funct7_valid
-            $funct7[6:0] = $instr[31:25];
-            
-         $rd_valid = $is_r_instr || $is_i_instr || $is_u_instr || $is_j_instr;
-         ?$rd_valid
-            $rd[4:0] = $instr[11:7];
-            
          $funct3_valid = $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr;
          ?$funct3_valid
             $funct3[2:0] = $instr[14:12];
-            
+           
+         $funct7_valid = $is_r_instr ;
+         ?$funct7_valid
+            $funct7[6:0] = $instr[31:25];
+           
+         $rd_valid = $is_r_instr || $is_i_instr || $is_u_instr || $is_j_instr;
+         ?$rd_valid
+            $rd[4:0] = $instr[11:7];
+           
+         `BOGUS_USE($rd)
+           
+         //decode bits
          $dec_bits[11:0] = {$funct7[5],$funct3,$opcode};
          
          $is_beq = $dec_bits ==?  11'bx_000_1100011;
@@ -689,8 +669,8 @@ This is the link to my work [CPU](https://myth.makerchip.com/sandbox/02kfkhXA6/0
          $is_bltu = $dec_bits ==? 11'bx_110_1100011;
          $is_bgeu = $dec_bits ==? 11'bx_111_1100011;
          $is_addi = $dec_bits ==? 11'bx_000_0010011;
-         $is_add = $dec_bits ==   11'b0_000_0110011;
-         $is_load = $dec_bits ==?   11'bx_xxx_0000011;
+         $is_add = $dec_bits ==?  11'b0_000_0110011;
+         //$is_load = $dec_bits ==?   11'bx_xxx_0000011;
          $is_lui = $dec_bits ==?   11'bx_xxx_0110111;
          $is_auipc = $dec_bits ==?   11'bx_xxx_0010111;
          $is_jal = $dec_bits ==?   11'bx_xxx_1101111;
@@ -716,24 +696,27 @@ This is the link to my work [CPU](https://myth.makerchip.com/sandbox/02kfkhXA6/0
          $is_or = $dec_bits ==?  11'b0_110_0110011;
          $is_and = $dec_bits ==?  11'b0_111_0110011;
          
-      		@2
-        		 $br_tgt_pc[31:0] = $pc + $imm;
          
+         
+         //read register file and branch
+      @2  
+         
+         $src1_value[31:0] = (>>1$rf_wr_index == $rf_rd_index1) && >>1$rf_wr_en ? >>1$rf_wr_data :
+                              $rf_rd_data1;
+         $src2_value[31:0] = (>>1$rf_wr_index == $rf_rd_index2) && >>1$rf_wr_en ? >>1$rf_wr_data :
+                              $rf_rd_data2;
+         $br_tgt_pc[31:0] = $pc + $imm;
          $rf_rd_en1 = $rs1_valid;
          $rf_rd_index1[4:0] = $rs1;
-         
          $rf_rd_en2 = $rs2_valid;
          $rf_rd_index2[4:0] = $rs2;
-         $src1_value[31:0] = (>>1$rf_wr_index == $rf_rd_index1) && >>1$rf_wr_en  ?
-                              >>1$rf_wr_data : $rf_rd_data1;
-         $src2_value[31:0] = (>>1$rf_wr_index == $rf_rd_index2) && >>1$rf_wr_en  ?
-                              >>1$rf_wr_data : $rf_rd_data2;
          
-     		 @3
-        		 $sltu_rslt = $src1_value < $src2_value;
-        		 $sltiu_rslt = $src1_value < $imm;
          
-         		$result[31:0] = $is_addi || $is_load || $is_s_instr? $src1_value + $imm :
+         
+         
+         //ALU
+      @3                  
+         $result[31:0] = $is_addi || $is_load || $is_s_instr? $src1_value + $imm :
                          $is_add ? $src1_value + $src2_value:
                          $is_andi ? $src1_value & $imm:
                          $is_ori ? $src1_value | $imm:
@@ -756,15 +739,20 @@ This is the link to my work [CPU](https://myth.makerchip.com/sandbox/02kfkhXA6/0
                          $is_slt ? ($src1_value[31] == $src2_value[31]) ? $sltu_rslt : {31'b0, $src1_value[31]}:
                          $is_slti ? ($src1_value[31] == $imm[31]) ? $sltiu_rslt : {31'b0, $src1_value[31]}:
                          $is_sra ? { {32{$src1_value[31]}}, $src1_value} >> $src2_value[4:0]:
-                         32'bx;
-                         
-         $taken_br = $is_beq ? ($src1_value == $src2_value) :
-                     $is_bne ? ($src1_value != $src2_value) :
-                     $is_blt ? ($src1_value < $src2_value) ^ ($src1_value[31] != $src2_value[31]) :
-                     $is_bge ? ($src1_value >= $src2_value) ^ ($src1_value[31] != $src2_value[31]) :
-                     $is_bltu ? ($src1_value < $src2_value) :
-                     $is_bgeu ? ($src1_value >= $src2_value) : 1'b0;
+                         'x;
          
+         
+         
+         $taken_br =  $is_beq ? ($src1_value == $src2_value) :
+                      $is_bne ? ($src1_value != $src2_value) :
+                      $is_blt ? ( ($src1_value < $src2_value) ^ ($src1_value[31] != $src2_value[31]) ) :
+                      $is_bge ? ( ($src1_value >= $src2_value) ^ ($src1_value[31] != $src2_value[31]) ) :
+                      $is_bltu ? ($src1_value < $src2_value) :
+                      $is_bgeu ? ($src1_value >= $src2_value) :
+                      1'b0;
+               
+         //in case on invalid instruction      
+         $valid = !(>>1$valid_taken_br || >>2$valid_taken_br || >>1$valid_load || >>2$valid_load);
          $valid_taken_br = $valid && $taken_br;
          $valid_load = $valid && $is_load;
          
@@ -775,22 +763,34 @@ This is the link to my work [CPU](https://myth.makerchip.com/sandbox/02kfkhXA6/0
                      || >>1$valid_load || >>2$valid_load
                      || >>1$valid_jump || >>2$valid_jump) ;
          
-         $jalr_tgt_pc[31:0] = $src1_value + $imm; 
+         $jalr_tgt_pc[31:0] = $src1_value + $imm;
          
-         $rf_wr_en = $rd!='0 && $rd_valid && $valid ; 
+         
+         //register file write
+         $rf_wr_en = $rd_valid && $valid && $rd != 5'b0 || >>2$valid_load ;
          $rf_wr_index[4:0] = >>2$valid_load ? >>2$rd : $rd;
-         $rf_wr_data[31:0] = >>2$valid_load ? >>2$ld_data: $result ; 
-     		 @4
-       		  $dmem_wr_en = $is_s_instr && $valid;
+         $rf_wr_data[31:0] = >>2$valid_load ? >>2$ld_data : $result ;
          
-       		  $dmem_addr[3:0] = $result[5:2];
          
-       		  $dmem_wr_data[31:0] = $src2_value;
+         $sltiu_rslt[31:0] = $src1_value < $imm;
+         $sltu_rslt[31:0] = $src1_value < $src2_value;
          
-        		 $dmem_rd_en = $is_load;
          
-     		 @5
-		         $ld_data[31:0] = $dmem_rd_data;
+         //SRAM memory -store
+      @4
+         $dmem_wr_en = $is_s_instr && $valid;
+         
+         $dmem_addr[3:0] = $result[5:2];
+         
+         $dmem_wr_data[31:0] = $src2_value;
+         
+         $dmem_rd_en = $is_load;
+         
+         
+         //load data
+      @5
+         $ld_data[31:0] = $dmem_rd_data;      
+                           
 	    
 3. Then click on 'compile'.
 
